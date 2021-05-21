@@ -1,5 +1,21 @@
 # Prerequisites
 *.d
+bin
+obj
+out
+app
+private
+deprecated
+xoimandel.*
+
+# XOICO specific
+*.xo.h
+*.xo.c
+*.xo.state
+
+# IDE specific
+*.workspace
+*.cbp
 
 # Object files
 *.o
