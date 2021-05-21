@@ -1,2 +1,2 @@
 # xoimandel
-Mandelbrot Fractaler. Easy to use.
+Mandelbrot Set Fractaler. Easy to use.
