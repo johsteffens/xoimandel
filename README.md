@@ -58,7 +58,7 @@ You may use, distribute or publish such pictures freely under your own terms.
 Except for creating a nice and easy-to-use tool for mathematical recreation, 
 this application shall also demonstrate
 how to use the [beth-framework](https://github.com/johsteffens/beth) and
-especially programming language [xoila](https://github.com/johsteffens/beth#xoila).
+especially the programming language [xoila](https://github.com/johsteffens/beth#xoila).
 
 ------
 
