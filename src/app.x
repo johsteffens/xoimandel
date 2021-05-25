@@ -334,6 +334,64 @@ func (app_s) (gboolean menu_file_save_as_cb( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
+func (app_s) (gboolean menu_file_save_image_as_cb( m@* o )) =
+{
+    m GtkWidget* chooser = gtk_file_chooser_dialog_new
+    (
+        "File Save As",
+        GTK_WINDOW( o.window ),
+        GTK_FILE_CHOOSER_ACTION_SAVE,
+        "_Cancel",
+        GTK_RESPONSE_CANCEL,
+        "_Save",
+        GTK_RESPONSE_ACCEPT,
+        NULL
+    );
+
+    gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( chooser ), TRUE );
+
+    {
+        m GtkFileFilter* filter = gtk_file_filter_new();
+        gtk_file_filter_set_name( filter, "PNM Fomrat (*.pnm)" );
+        gtk_file_filter_add_pattern( filter, "*.pnm" );
+        gtk_file_chooser_add_filter( GTK_FILE_CHOOSER( chooser ), filter );
+    }
+
+    if( o.default_file )
+    {
+        gtk_file_chooser_set_filename( GTK_FILE_CHOOSER( chooser ), o.default_file.sc );
+    }
+
+    gint result = gtk_dialog_run( GTK_DIALOG( chooser ) );
+
+    if( result == GTK_RESPONSE_ACCEPT )
+    {
+        sd_t file_sd = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( chooser ) );
+        st_s^ file.copy_sc( file_sd );
+        g_free( file_sd );
+
+        rgba_image_s* image = o.worker.get_draw_image();
+        m $* img_u2 = bcore_img_u2_s!^;
+        img_u2.set_size( image.sz.height, image.sz.width );
+        for( sz_t j = 0; j < image.sz.height; j++ )
+        {
+            for( sz_t i = 0; i < image.sz.width; i++ )
+            {
+                rgba_s* rgba = image.get_pix( i, j );
+                img_u2.set_rgb( j, i, rgba.r, rgba.g, rgba.b );
+            }
+        }
+
+        img_u2.pnm_to_file( file.sc );
+    }
+
+    gtk_widget_destroy( chooser );
+
+    return TRUE;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
 func (app_s) (gboolean menu_about_cb( m@* o )) =
 {
     st_s^ msg;
@@ -414,6 +472,12 @@ func (app_s) (void activate_gtk_app( m GtkApplication* gtk_app, m@* o )) =
             m GtkWidget* item = gtk_menu_item_new_with_label( "Save As" );
             gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
             g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_menu_file_save_as_cb ), o );
+            gtk_widget_show( item );
+        }
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "Save Image As" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_menu_file_save_image_as_cb ), o );
             gtk_widget_show( item );
         }
         {

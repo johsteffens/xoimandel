@@ -242,6 +242,7 @@ stamp rgba_image_s = x_array
 
     func (o set_sz( m@* o, sz2i_s sz )) = { o.set_size( sz.width * sz.height ); o.sz = sz; return o; };
     func (u2_t get_pix_u2( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ].u2() : 0; };
+    func (rgba_s* get_pix( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ].1 : NULL; };
     func (void set_pix_u2( m@* o, sz_t x, sz_t y, u2_t v )) = { if( o.sz.inside( x, y ) ) o.[ y * o.sz.width + x ].set_u2( v ); };
     func (u3_t pix_u2_from_idx( @* o, v2i_s* idx )) = { return o.get_pix_u2( idx.x, idx.y ); };
 
