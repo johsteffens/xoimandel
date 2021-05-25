@@ -1,4 +1,4 @@
-# Fractal Renderer of the Mandelbot-Set
+# Fractal Renderer of the Mandelbrot-Set
 
 [<img align = "left" width = "170" height = "200" src = "https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/Screenshot.png">](https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/Screenshot.png "Screenshot" )
 
