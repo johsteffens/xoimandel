@@ -33,6 +33,7 @@ stamp worker_s =
     sz2i_s image_sz;
 
     x_mutex_s mutex;
+    x_thread_s thread;
 
     psp_s depth_image_buffered_psp;
     psp_s depth_image_released_psp;
@@ -41,8 +42,6 @@ stamp worker_s =
 
     depth_image_s => depth_image_buffered;
     depth_image_s => depth_image_released;
-
-    x_thread_s thread;
 
     /// image for drawing
     psp_s        draw_psp;
@@ -58,6 +57,7 @@ stamp worker_s =
 
     //------------------------------------------------------------------------------------------------------------------
 
+    func (void reset( m@* o ));
     func (void setup( m@* o ));
 
     func bcore_inst_call.init_x = { o.setup(); };
@@ -66,12 +66,19 @@ stamp worker_s =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) setup =
+func (worker_s) reset =
 {
-    o.depth_image_buffered_psp = psp_s_of( v2f_s_of( 0, 0 ), 0.004, v2f_s_of(  -0.5, 0 ) );
-    o.draw_psp                 = psp_s_of( v2f_s_of( 0, 0 ), 1.12 , v2f_s_of( -10.1, 5 ) );
+    o.depth_image_buffered_psp = psp_s_of( v2f_s_of( 0, 0 ), 0.008, v2f_s_of(  -0.5, 0 ) );
+    o.draw_psp                 = psp_s_of( v2f_s_of( 0, 0 ), 1 , v2f_s_of( 0, 0 ) );
     o.depth_image_released_psp = psp_s_of_one();
     o.scale_step   = 1.1;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (worker_s) setup =
+{
+    o.reset();
     o.depth_image_buffered = depth_image_s!;
     o.depth_image_released = depth_image_s!;
 };
@@ -148,29 +155,29 @@ func (worker_s) x_thread.m_thread_func =
 
         bl_t redraw = true;
         {
+            $ psp = o.depth_image_buffered_psp;
             o.mutex.create_unlock()^;
             if( !o.image_sz.equal( o.depth_image_buffered.sz ) ) o.depth_image_buffered.set_sz( o.image_sz );
-            $ psp = o.depth_image_buffered_psp;
             m $* image = o.depth_image_buffered;
 
             sz_t block_size = 64;
 
+            block_thread_pool_s^ pool;
             for( sz_t j = 0; j < image.sz.height; j += block_size )
             {
-                block_thread_pool_s^ pool;
                 for( sz_t i = 0; i < image.sz.width; i += block_size )
                 {
                     pool.push_d( block_thread_s!.of( v2i_s_of( i, j ), sz2i_s_of( block_size, block_size ), psp, image, o.orbit ) );
                 }
-                pool.clear();
-
-                o.mutex.create_lock()^;
-                if( o.shutting_down || o.depth_image_update )
-                {
-                    redraw = false;
-                    break;
-                }
             }
+            pool.clear();
+
+//            o.mutex.create_lock()^;
+//            if( o.shutting_down || o.depth_image_update )
+//            {
+//                redraw = false;
+//                break;
+//            }
         }
 
         if( redraw )
@@ -229,6 +236,57 @@ func (worker_s) (void set_refpos( m @* o, v2f_s pos_pointer )) =
     v2f_s refpos_surface = :pos_from_fdx( o.image_sz, pos_pointer );
     o.draw_psp.set_pos( refpos_surface );
     o.mutex.unlock();
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (worker_s) (void get_psp( m @* o, m psp_s* psp )) =
+{
+    o.mutex.lock();
+    psp.copy( o.depth_image_buffered_psp );
+    o.mutex.unlock();
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (worker_s) (void set_psp( m @* o, psp_s* psp )) =
+{
+    o.mutex.lock();
+    o.reset();
+    o.depth_image_buffered_psp.copy( psp );
+    o.depth_image_released_psp = psp_s_of_one();
+    o.draw_psp = psp_s_of_one();
+    o.mutex.unlock();
+    o.image_update();
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (worker_s) (void reset_psp( m @* o )) =
+{
+    o.mutex.lock();
+    o.reset();
+    o.mutex.unlock();
+    o.image_update();
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (worker_s) (void get_color_map( m @* o, m color_map_s* map )) =
+{
+    o.mutex.lock();
+    map.copy( o.color_map );
+    o.mutex.unlock();
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (worker_s) (void set_color_map( m @* o, color_map_s* map )) =
+{
+    o.mutex.lock();
+    o.color_map.copy( map );
+    o.mutex.unlock();
+    o.image_update();
 };
 
 //----------------------------------------------------------------------------------------------------------------------

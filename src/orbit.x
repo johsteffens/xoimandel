@@ -26,6 +26,7 @@ stamp cx_s = obliv
     f3_t r; f3_t i;
     func (@    of( f3_t r, f3_t i )) = { cx_s c; c.r = r; c.i = i; return c; };
     func (@    add( @ o, @ b )) = { return cx_s_of( o.r + b.r, o.i + b.i ); };
+    func (@    sub( @ o, @ b )) = { return cx_s_of( o.r - b.r, o.i - b.i ); };
     func (@    mul( @ o, @ b )) = { return cx_s_of( o.r * b.r - o.i * b.i, o.r * b.i + o.i * b.r ); };
     func (@    sqr( @ o ))      = { return cx_s_of( o.r * o.r - o.i * o.i, 2 * o.r * o.i ); };
     func (f3_t sqr_mag( @ o ))  = { return o.r * o.r + o.i * o.i; };
@@ -58,13 +59,18 @@ func (orbit_s) (u3_t escape_time( @* o, v2f_s pos )) =
     f3_t limit = 1 << 16;
     u3_t i = 1;
 
+//    for( ; i <= o->max_iterations && v.sqr_mag() < limit; i++ )
+//    {
+//        v = v.sqr().add( c );
+//    }
+
+    // We do multiple complex iterations at once for better efficiency.
+    // The escape criterion need not be tested each iteration.
     for( ; i <= o->max_iterations && v.sqr_mag() < limit; i += 2 )
     {
-        /** We do multiple complex iterations at once for better efficiency.
-         *  The escape criterion need not be tested each iteration.
-         */
         v = v.sqr().add( c ).sqr().add( c );
     }
+
 
     f3_t sqr_mag = v.sqr_mag();
 

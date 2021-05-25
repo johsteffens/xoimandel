@@ -38,9 +38,6 @@ func (bl_t f3_is_nan( f3_t v )) = { return v != v; }; // nan compares unequal to
 func (sz_t sz_max ( sz_t a, sz_t b )) = (verbatim_C) { return sz_max(a,b); };
 func (sz_t sz_min ( sz_t a, sz_t b )) = (verbatim_C) { return sz_min(a,b); };
 
-
-
-
 //----------------------------------------------------------------------------------------------------------------------
 
 /// 2d size-vector

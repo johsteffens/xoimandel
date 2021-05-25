@@ -16,6 +16,8 @@
  *  along with XOIMANDEL.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+include <locale.h>;
+
 /**********************************************************************************************************************/
 
 // active xoico waivers for this file (see xoimandel_app.cfg)
@@ -33,14 +35,32 @@ type GdkEventConfigure;
 type GdkEventMotion;
 type GdkEventButton;
 type GdkEventScroll;
+type GdkEventKey;
 type GtkWidget;
+type GtkFileChooser;
+type GtkFileFilter;
+
+//----------------------------------------------------------------------------------------------------------------------
+
+stamp app_param_s =
+{
+    psp_s psp;
+    color_map_s color_map;
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 
 stamp app_s =
 {
+    st_s => default_file;
+
+    sz_t initial_width  = 400;
+    sz_t initial_height = 400;
+
     hidden worker_s => worker;
     hidden bl_t shutting_down;
+
+    private GtkWidget* window;            // main window
     private GtkWidget* rgba_image_widget; // widget displaying rgba_image (private)
 
     func (int redraw( m @* o )) =
@@ -51,6 +71,33 @@ stamp app_s =
 
     func xoimandel.redraw_now = { o.redraw(); };
     func xoimandel.redraw_when_idle = { verbatim_C { gdk_threads_add_idle( (int(*)(vd_t))app_s_redraw, o ) }; };
+
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (void reset_view( m@* o )) =
+{
+    if( !o.worker ) return;
+    o.worker.reset_psp();
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (void set_param( m@* o, app_param_s* param )) =
+{
+    if( !o.worker ) return;
+    o.worker.set_color_map( param.color_map );
+    o.worker.set_psp( param.psp );
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (void get_param( m@* o, m app_param_s* param )) =
+{
+    if( !o.worker ) return;
+    o.worker.get_color_map( param.color_map );
+    o.worker.get_psp( param.psp );
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -134,33 +181,300 @@ func (app_s) (gboolean drawable_scroll_event_cb( GtkWidget* drw, GdkEventScroll*
 
 //----------------------------------------------------------------------------------------------------------------------
 
+func (app_s) (gboolean menu_file_open_cb( m@* o )) =
+{
+    m GtkWidget* chooser = gtk_file_chooser_dialog_new
+    (
+        "File Open",
+        GTK_WINDOW( o.window ),
+        GTK_FILE_CHOOSER_ACTION_OPEN,
+        "_Cancel",
+        GTK_RESPONSE_CANCEL,
+        "_Open",
+        GTK_RESPONSE_ACCEPT,
+        NULL
+    );
+
+    if( o.default_file )
+    {
+        gtk_file_chooser_set_filename( GTK_FILE_CHOOSER( chooser ), o.default_file.sc );
+    }
+
+    gint result = gtk_dialog_run( GTK_DIALOG( chooser ) );
+
+    if( result == GTK_RESPONSE_ACCEPT )
+    {
+        sd_t file = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( chooser ) );
+        m x_source* source = x_source_check_create_from_file( file )^;
+        app_param_s^ param;
+        if( x_btml_t_appears_valid( param._, source ) )
+        {
+            param.cast( m x_btml* ).from_source( source );
+            o.set_param( param );
+            o.default_file =< st_s_create_sc( file );
+            g_free( file );
+            gtk_window_set_title( GTK_WINDOW( o.window ), o.default_file.sc );
+        }
+        else
+        {
+            st_s^ msg.copy_fa( "File '#<sc_t>' is invalid.", file );
+            m GtkWidget* dlg = gtk_message_dialog_new( GTK_WINDOW( o.window ), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, "%s", msg.sc );
+            gtk_dialog_run( GTK_DIALOG( dlg ) );
+            gtk_widget_destroy( dlg );
+        }
+    }
+
+    gtk_widget_destroy( chooser );
+
+    return TRUE;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (gboolean menu_file_reload_cb( m@* o )) =
+{
+    if( o.default_file )
+    {
+        m x_source* source = x_source_check_create_from_file( o.default_file.sc )^;
+        app_param_s^ param;
+        if( x_btml_t_appears_valid( param._, source ) )
+        {
+            param.cast( m x_btml* ).from_source( source );
+            o.set_param( param );
+        }
+        else
+        {
+            st_s^ msg.copy_fa( "File '#<sc_t>' is invalid.", o.default_file );
+            m GtkWidget* dlg = gtk_message_dialog_new( GTK_WINDOW( o.window ), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, "%s", msg.sc );
+            gtk_dialog_run( GTK_DIALOG( dlg ) );
+            gtk_widget_destroy( dlg );
+        }
+        return TRUE;
+    }
+    else
+    {
+        return o.menu_file_open_cb();
+    }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (gboolean menu_file_save_cb( m@* o )) =
+{
+    if( o.default_file )
+    {
+        app_param_s^ param;
+        o.get_param( param );
+        param.cast( x_btml* ).to_file( o.default_file.sc );
+        return TRUE;
+    }
+    else
+    {
+        return o.menu_file_save_as_cb();
+    }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (gboolean menu_file_save_as_cb( m@* o )) =
+{
+    m GtkWidget* chooser = gtk_file_chooser_dialog_new
+    (
+        "File Save As",
+        GTK_WINDOW( o.window ),
+        GTK_FILE_CHOOSER_ACTION_SAVE,
+        "_Cancel",
+        GTK_RESPONSE_CANCEL,
+        "_Save",
+        GTK_RESPONSE_ACCEPT,
+        NULL
+    );
+
+    gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( chooser ), TRUE );
+
+//    {
+//        m GtkFileFilter* filter = gtk_file_filter_new();
+//        gtk_file_filter_set_name( filter, "Xoi-Mandel (*.xoimandel)" );
+//        gtk_file_filter_add_pattern( filter, "*.xoimandel" );
+//        gtk_file_chooser_add_filter( GTK_FILE_CHOOSER( chooser ), filter );
+//    }
+//
+//    {
+//        m GtkFileFilter* filter = gtk_file_filter_new();
+//        gtk_file_filter_set_name( filter, "All Files (*)" );
+//        gtk_file_filter_add_pattern( filter, "*" );
+//        gtk_file_chooser_add_filter( GTK_FILE_CHOOSER( chooser ), filter );
+//    }
+
+    if( o.default_file )
+    {
+        gtk_file_chooser_set_filename( GTK_FILE_CHOOSER( chooser ), o.default_file.sc );
+    }
+
+    gint result = gtk_dialog_run( GTK_DIALOG( chooser ) );
+
+    if( result == GTK_RESPONSE_ACCEPT )
+    {
+        sd_t file_sd = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( chooser ) );
+        st_s^ file.copy_sc( file_sd );
+        g_free( file_sd );
+
+        app_param_s^ param;
+        o.get_param( param );
+        param.cast( x_btml* ).to_file( file.sc );
+
+        o.default_file =< file.clone();
+        gtk_window_set_title( GTK_WINDOW( o.window ), o.default_file.sc );
+    }
+
+    gtk_widget_destroy( chooser );
+
+    return TRUE;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (gboolean menu_about_cb( m@* o )) =
+{
+    st_s^ msg;
+    msg.push_fa( "XoiMandel\n" );
+    msg.push_fa( "GTK+ 3 based application for zooming\n" );
+    msg.push_fa( "into the Mandelbrot-Set.\n" );
+    msg.push_fa( "\n" );
+    msg.push_fa( "Source: https://github.com/johsteffens/xoimandel\n" );
+    msg.push_fa( "Author: Johannes Steffens\n" );
+    msg.push_fa( "License: GPL Version 3.\n" );
+
+    m GtkWidget* dlg = gtk_message_dialog_new( GTK_WINDOW( o.window ), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "%s", msg.sc );
+
+    gtk_dialog_run( GTK_DIALOG( dlg ) );
+    gtk_widget_destroy( dlg );
+    return TRUE;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+func (app_s) (gboolean win_key_press_event_cb( GtkWidget* win, GdkEventKey* event, m@* o )) =
+{
+    if( event->state == GDK_CONTROL_MASK && event->keyval == GDK_KEY_s )
+    {
+        return app_s_menu_file_save_cb( o );
+    }
+    else if( event->state == GDK_CONTROL_MASK && event->keyval == GDK_KEY_r )
+    {
+        return app_s_menu_file_reload_cb( o );
+    }
+    else
+    {
+        return FALSE;
+    }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
 func (app_s) (void activate_gtk_app( m GtkApplication* gtk_app, m@* o )) =
 {
     m GtkWidget* win = gtk_application_window_new( gtk_app );
-    gtk_window_set_title( GTK_WINDOW( win ), "XOIMANDEL" );
+    gtk_window_set_title( GTK_WINDOW( win ), "XoiMandel" );
+    m GtkWidget* win_vbox = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+    gtk_container_add( GTK_CONTAINER( win ), win_vbox );
+
+    m GtkWidget* menu_box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+    gtk_container_add( GTK_CONTAINER( win_vbox ), menu_box );
+    gtk_widget_show( menu_box );
+
+    m GtkWidget* menu_bar = gtk_menu_bar_new();
+    gtk_box_pack_start( GTK_BOX( menu_box ), menu_bar, TRUE, TRUE, 0 );
+    gtk_widget_show( menu_bar );
+
+    {
+        m GtkWidget* item = gtk_menu_item_new_with_label( "File" );
+        gtk_menu_shell_append( GTK_MENU_SHELL( menu_bar ), item );
+        m GtkWidget* menu = gtk_menu_new();
+        gtk_menu_item_set_submenu( GTK_MENU_ITEM( item ), menu );
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "Open" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_menu_file_open_cb ), o );
+            gtk_widget_show( item );
+        }
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "Reload (Ctrl+R)" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_menu_file_reload_cb ), o );
+            gtk_widget_show( item );
+        }
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "Save (Ctrl+S)" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_menu_file_save_cb ), o );
+            gtk_widget_show( item );
+        }
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "Save As" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_menu_file_save_as_cb ), o );
+            gtk_widget_show( item );
+        }
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "Quit" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( gtk_window_close ), win );
+            gtk_widget_show( item );
+        }
+    }
+
+    {
+        m GtkWidget* item = gtk_menu_item_new_with_label( "View" );
+        gtk_menu_shell_append( GTK_MENU_SHELL( menu_bar ), item );
+        m GtkWidget* menu = gtk_menu_new();
+        gtk_menu_item_set_submenu( GTK_MENU_ITEM( item ), menu );
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "Reset" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_reset_view ), o );
+            gtk_widget_show( item );
+        }
+    }
+
+    {
+        m GtkWidget* item = gtk_menu_item_new_with_label( "Help" );
+        gtk_menu_shell_append( GTK_MENU_SHELL( menu_bar ), item );
+        m GtkWidget* menu = gtk_menu_new();
+        gtk_menu_item_set_submenu( GTK_MENU_ITEM( item ), menu );
+        {
+            m GtkWidget* item = gtk_menu_item_new_with_label( "About" );
+            gtk_menu_shell_append( GTK_MENU_SHELL( menu ), item );
+            g_signal_connect_swapped( item, "activate", G_CALLBACK( app_s_menu_about_cb ), o );
+            gtk_widget_show( item );
+        }
+    }
 
     m GtkWidget* frm = gtk_frame_new( NULL );
     gtk_frame_set_shadow_type( GTK_FRAME( frm ), GTK_SHADOW_ETCHED_IN );
-    gtk_container_add( GTK_CONTAINER( win ), frm );
 
-    m GtkWidget* drw = gtk_drawing_area_new();
-    gtk_widget_set_size_request( drw, 600, 600 );
-    gtk_container_add( GTK_CONTAINER( frm ), drw );
+    gtk_box_pack_end( GTK_BOX( win_vbox ), frm, TRUE, TRUE, 0 );
+
+    m GtkWidget* drawing_area = gtk_drawing_area_new();
+    gtk_widget_set_size_request( drawing_area, o.initial_width, o.initial_height );
+    gtk_container_add( GTK_CONTAINER( frm ), drawing_area );
 
     o.worker =< worker_s!;
-    o.rgba_image_widget = drw;
+    o.window = win;
+    o.rgba_image_widget = drawing_area;
     o.worker.parent = o;
 
     g_signal_connect( win, "destroy", G_CALLBACK( app_s_main_window_close_cb ), o );
-    gtk_container_set_border_width( GTK_CONTAINER( win ), 4 );
+    gtk_container_set_border_width( GTK_CONTAINER( frm ), 4 );
 
-    g_signal_connect( drw, "draw", G_CALLBACK( app_s_drawable_draw_cb ), o );
-    g_signal_connect( drw, "configure-event", G_CALLBACK( app_s_drawable_configure_event_cb ), o ); // resize
-    g_signal_connect( drw, "motion-notify-event", G_CALLBACK( app_s_drawable_motion_notify_event_cb ), o ); // mouse motion
-    g_signal_connect( drw, "button-press-event",  G_CALLBACK( app_s_drawable_button_press_event_cb ), o ); // mouse button
-    g_signal_connect( drw, "scroll-event",  G_CALLBACK( app_s_drawable_scroll_event_cb ), o ); // mouse button
+    g_signal_connect( drawing_area, "draw", G_CALLBACK( app_s_drawable_draw_cb ), o );
+    g_signal_connect( drawing_area, "configure-event", G_CALLBACK( app_s_drawable_configure_event_cb ), o ); // resize
+    g_signal_connect( drawing_area, "motion-notify-event", G_CALLBACK( app_s_drawable_motion_notify_event_cb ), o ); // mouse motion
+    g_signal_connect( drawing_area, "button-press-event",  G_CALLBACK( app_s_drawable_button_press_event_cb ), o ); // mouse button
+    g_signal_connect( drawing_area, "scroll-event",  G_CALLBACK( app_s_drawable_scroll_event_cb ), o ); // mouse button
 
-    gtk_widget_set_events( drw, gtk_widget_get_events( drw ) | GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK );
+    g_signal_connect( win, "key-press-event",  G_CALLBACK( app_s_win_key_press_event_cb ), o ); // keyboard
+    gtk_widget_set_events( drawing_area, gtk_widget_get_events( drawing_area ) | GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK );
 
     gtk_widget_show_all( win );
 };
@@ -169,7 +483,7 @@ func (app_s) (void activate_gtk_app( m GtkApplication* gtk_app, m@* o )) =
 
 func (app_s) (int run( m@* o, int argc, m char** argv )) =
 {
-    m GtkApplication* gtk_app = gtk_application_new( "mandel.johsteffens.de", G_APPLICATION_FLAGS_NONE );
+    m GtkApplication* gtk_app = gtk_application_new( "xoimandel.johsteffens.de", G_APPLICATION_FLAGS_NONE );
     g_signal_connect( gtk_app, "activate", G_CALLBACK( app_s_activate_gtk_app ), o );
     return g_application_run( G_APPLICATION( gtk_app ), argc, argv );
 };
@@ -180,6 +494,9 @@ stamp c_args_s = x_array { sc_t []; };
 
 func x_inst.main =
 {
+    gtk_disable_setlocale();
+    setlocale( LC_ALL, "C" );
+
     c_args_s^ c_args.set_size( args.size );
     for( sz_t i = 0; i < args.size; i++ ) c_args.[ i ] = args.[ i ].sc;
 

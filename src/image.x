@@ -27,8 +27,8 @@ stamp depth_image_s = x_array
 {
     u3_t []; sz2i_s sz;
     func (o set_sz( m@* o, sz2i_s sz )) = { o.set_size( sz.width * sz.height ); o.sz = sz; return o; };
-    func (u3_t get_pix( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o->data[ y * o->sz.width + x ] : 0; };
-    func (void set_pix( m@* o, sz_t x, sz_t y, u3_t v )) = { if( o.sz.inside( x, y ) ) o->data[ y * o->sz.width + x ] = v; };
+    func (u3_t get_pix( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ] : 0; };
+    func (void set_pix( m@* o, sz_t x, sz_t y, u3_t v )) = { if( o.sz.inside( x, y ) ) o.[ y * o.sz.width + x ] = v; };
     func (u3_t get_max( const depth_image_s* o )) = { u3_t r =  0; foreach( u3_t v in o ) r = v > r ? v : r; return r; };
     func (u3_t get_min( const depth_image_s* o )) = { u3_t r = -1; foreach( u3_t v in o ) r = v < r ? v : r; return r; };
     func (u3_t pix_from_idx( @* o, v2i_s* idx )) = { return o.get_pix( idx.x, idx.y ); };
@@ -47,75 +47,97 @@ stamp depth_image_s = x_array
 
 //----------------------------------------------------------------------------------------------------------------------
 
-/// cubic spline warping optimized for a pixel-row
-func (depth_image_s) (void fill_cub_row_from_pos( @* o, v2f_s pos, f3_t dx, m u3_t* row, sz_t size )) =
+func (depth_image_s) (u3_t cub_pix_from_pos( @* o, v2f_s pos )) =
 {
-    if( o->sz.width * o->sz.height == 0 ) return;
     v2f_s fdx = :fdx_from_pos( o.sz, pos );
+    v2i_s idx = { :f3_rint( fdx.x - 0.5 ), :f3_rint( fdx.y - 0.5 ) };
+    s3_t x = :f3_rint( ( fdx.x - idx.x ) * 64 );
+    s3_t y = :f3_rint( ( fdx.y - idx.y ) * 64 );
 
-    const f3_t pow_2_32 = verbatim_C{ pow( 2.0, 32 ) };
-    s3_t x_idx0_fx = :f3_rint( ( fdx.x - 0.5 ) * pow_2_32 );
-    s3_t x_stp_fx  = :f3_rint( dx * pow_2_32 );
+    s3_t a; s3_t b; s3_t c; s3_t d; s3_t r; s3_t s; s3_t t; s3_t u;
+    s3_t v; s3_t va; s3_t vb; s3_t vc; s3_t vd;
 
-    s3_t y_idx_fx  = :f3_rint( ( fdx.y - 0.5 ) * pow_2_32 );
-    uz_t y_idx = ( y_idx_fx >> 32 ) - 1;
+    a = o.get_pix( idx.x - 1, idx.y - 1 );
+    b = o.get_pix( idx.x    , idx.y - 1 );
+    c = o.get_pix( idx.x + 1, idx.y - 1 );
+    d = o.get_pix( idx.x + 2, idx.y - 1 );
 
-    s3_t y  = ( y_idx_fx >> 26 ) & ( ( 1 << 6 ) - 1 );
-    s3_t y0 =             1 << 18;
-    s3_t y1 = ( y         ) << 12;
-    s3_t y2 = ( y * y     ) << 6;
-    s3_t y3 = ( y * y * y );
+    t = c - a;
+    u = 2 * b;
+    r =     d + 3 * b - a - 3 * c;
+    s = 2 * a - 5 * b - d + 4 * c;
 
-    s3_t yf_arr[ 4 ] =
-    {
-        (     -y3 + 2 * y2 - y1      ),
-        (  3 * y3 - 5 * y2 +  2 * y0 ),
-        ( -3 * y3 + 4 * y2 + y1      ),
-        (      y3 -     y2           )
-    };
+    v  = ( r * x * x * x );
+    v += ( s * x * x     ) << 6;
+    v += ( t * x         ) << 12;
+    v += ( u             ) << 18;
 
+    va = ( v + ( 1 << 18 ) ) >> 19;
 
-    sz_t width = o->sz.width;
-    for( sz_t i = 0; i < size; i++ ) row[ i ] = 0;
+    a = o.get_pix( idx.x - 1, idx.y );
+    b = o.get_pix( idx.x    , idx.y );
+    c = o.get_pix( idx.x + 1, idx.y );
+    d = o.get_pix( idx.x + 2, idx.y );
 
-    for( sz_t j = 0; j < 4; j++ )
-    {
-        s3_t yf = yf_arr[ j ];
-        if( y_idx < o->sz.height )
-        {
-            u3_t* dp = o.data + y_idx * width;
-            s3_t x_idx_fx = x_idx0_fx;
-            for( sz_t i = 0; i < size; i++ )
-            {
-                uz_t x_idx = ( x_idx_fx >> 32 ) - 1;
+    t = c - a;
+    u = 2 * b;
+    r =     d + 3 * b - a - 3 * c;
+    s = 2 * a - 5 * b - d + 4 * c;
 
-                s3_t x  = ( x_idx_fx >> 26 ) & ( ( 1 << 6 ) - 1 );
-                s3_t x0 =             1 << 18;
-                s3_t x1 = ( x         ) << 12;
-                s3_t x2 = ( x * x     ) <<  6;
-                s3_t x3 = ( x * x * x );
+    v  = ( r * x * x * x );
+    v += ( s * x * x     ) << 6;
+    v += ( t * x         ) << 12;
+    v += ( u             ) << 18;
 
-                s3_t v;
-                v  = x_idx < width ? dp[ x_idx ] * (     -x3 + 2 * x2 - x1      ) : 0;
-                x_idx++;
-                v += x_idx < width ? dp[ x_idx ] * (  3 * x3 - 5 * x2 +  2 * x0 ) : 0;
-                x_idx++;
-                v += x_idx < width ? dp[ x_idx ] * ( -3 * x3 + 4 * x2 + x1      ) : 0;
-                x_idx++;
-                v += x_idx < width ? dp[ x_idx ] * (      x3 -     x2           ) : 0;
+    vb = ( v + ( 1 << 18 ) ) >> 19;
 
-                row[ i ] += ( ( v + ( 1 << 17 ) ) >> 18 ) * yf;
-                x_idx_fx += x_stp_fx;
-            }
-        }
-        y_idx++;
-    }
+    a = o.get_pix( idx.x - 1, idx.y + 1 );
+    b = o.get_pix( idx.x    , idx.y + 1 );
+    c = o.get_pix( idx.x + 1, idx.y + 1 );
+    d = o.get_pix( idx.x + 2, idx.y + 1 );
 
-    for( sz_t i = 0; i < size; i++ )
-    {
-        s3_t v = row[ i ];
-        row[ i ] = ( v >= 0 ) ? ( v + ( 1 << 19 ) ) >> 20 : 0;
-    }
+    t = c - a;
+    u = 2 * b;
+    r =     d + 3 * b - a - 3 * c;
+    s = 2 * a - 5 * b - d + 4 * c;
+
+    v  = ( r * x * x * x );
+    v += ( s * x * x     ) << 6;
+    v += ( t * x         ) << 12;
+    v += ( u             ) << 18;
+
+    vc = ( v + ( 1 << 18 ) ) >> 19;
+
+    a = o.get_pix( idx.x - 1, idx.y + 2 );
+    b = o.get_pix( idx.x    , idx.y + 2 );
+    c = o.get_pix( idx.x + 1, idx.y + 2 );
+    d = o.get_pix( idx.x + 2, idx.y + 2 );
+
+    t = c - a;
+    u = 2 * b;
+    r =     d + 3 * b - a - 3 * c;
+    s = 2 * a - 5 * b - d + 4 * c;
+
+    v  = ( r * x * x * x );
+    v += ( s * x * x     ) << 6;
+    v += ( t * x         ) << 12;
+    v += ( u             ) << 18;
+
+    vd = ( v + ( 1 << 18 ) ) >> 19;
+
+    t = vc - va;
+    u = 2 * vb;
+    r =     vd + 3 * vb - va - 3 * vc;
+    s = 2 * va - 5 * vb - vd + 4 * vc;
+
+    v  = ( r * y * y * y );
+    v += ( s * y * y     ) << 6;
+    v += ( t * y         ) << 12;
+    v += ( u             ) << 18;
+
+    v = ( v + ( 1 << 18 ) ) >> 19;
+
+    return v < 0 ? 0 : v;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -175,13 +197,24 @@ stamp color_s = obliv x_inst
 
 stamp color_map_s =
 {
+//    f3_t ra = 1.0; f3_t rb = 2.0; f3_t rc = 4.0;
+//    f3_t ga = 2.0; f3_t gb = 1.0; f3_t gc = 3.0;
+//    f3_t ba = 5.0; f3_t bb = 3.0; f3_t bc = 1.0;
+
+    f3_t ra = 1.0; f3_t rb = 2.5; f3_t rc = 4.0;
+    f3_t ga = 3.0; f3_t gb = 1.0; f3_t gc = 3.0;
+    f3_t ba = 5.0; f3_t bb = 4.0; f3_t bc = 1.0;
+
+//    f3_t ra = 5.0; f3_t rb = 4.0; f3_t rc = 1.0;
+//    f3_t ga = 5.0; f3_t gb = 1.0; f3_t gc = 5.0;
+//    f3_t ba = 1.0; f3_t bb = 2.5; f3_t bc = 4.0;
     func (color_s map( @* o, u3_t val )) =
     {
         color_s c;
         f3_t v = ( f3_t )( val ) / 65536;
-        c.b = :f3_sin( :f3_pow( v, 5.0 ) * 3 * :f3_pi() ) * ( 1 - v ) + :f3_pow( v, 1.0 ) * v;
-        c.g = :f3_sin( :f3_pow( v, 2.0 ) * 1 * :f3_pi() ) * ( 1 - v ) + :f3_pow( v, 3.0 ) * v;
-        c.r = :f3_sin( :f3_pow( v, 1.0 ) * 2 * :f3_pi() ) * ( 1 - v ) + :f3_pow( v, 4.0 ) * v;
+        c.r = :f3_sin( :f3_pow( v, o.ra ) * o.rb * :f3_pi() ) * ( 1 - v ) + :f3_pow( v, o.rc ) * v;
+        c.g = :f3_sin( :f3_pow( v, o.ga ) * o.gb * :f3_pi() ) * ( 1 - v ) + :f3_pow( v, o.gc ) * v;
+        c.b = :f3_sin( :f3_pow( v, o.ba ) * o.bb * :f3_pi() ) * ( 1 - v ) + :f3_pow( v, o.bc ) * v;
         return c;
     };
 };
@@ -208,15 +241,15 @@ stamp rgba_image_s = x_array
     sz2i_s sz;
 
     func (o set_sz( m@* o, sz2i_s sz )) = { o.set_size( sz.width * sz.height ); o.sz = sz; return o; };
-    func (u2_t get_pix_u2( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.data[ y * o->sz.width + x ].u2() : 0; };
-    func (void set_pix_u2( m@* o, sz_t x, sz_t y, u2_t v )) = { if( o.sz.inside( x, y ) ) o->data[ y * o->sz.width + x ].set_u2( v ); };
+    func (u2_t get_pix_u2( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ].u2() : 0; };
+    func (void set_pix_u2( m@* o, sz_t x, sz_t y, u2_t v )) = { if( o.sz.inside( x, y ) ) o.[ y * o.sz.width + x ].set_u2( v ); };
     func (u3_t pix_u2_from_idx( @* o, v2i_s* idx )) = { return o.get_pix_u2( idx.x, idx.y ); };
 
     func (void set_pix_rgba( m@* o, sz_t x, sz_t y, u0_t r, u0_t g, u0_t b, u0_t a )) =
     {
         if( o.sz.inside( x, y ) )
         {
-            m rgba_s* rgba = o->data[ y * o->sz.width + x ];
+            m rgba_s* rgba = o.[ y * o.sz.width + x ];
             rgba.r = r;
             rgba.g = g;
             rgba.b = b;
@@ -227,17 +260,14 @@ stamp rgba_image_s = x_array
 
 //----------------------------------------------------------------------------------------------------------------------
 
-stamp u3_buf_s = x_array { u3_t []; };
-
-func (rgba_image_s) (void fill_cub_from_depth_image( m@* o, c depth_image_s* depth_image, c color_map_s* color_map, psp_s psp )) =
+func (rgba_image_s) (void fill_cub_from_depth_image( m @* o, depth_image_s* depth_image, color_map_s* color_map, psp_s psp )) =
 {
-    u3_buf_s^ buf.set_size( o.sz.width );
-    for( sz_t y = 0; y < o->sz.height; y++ )
+    for( sz_t y = 0; y < o.sz.height; y++ )
     {
-        depth_image.fill_cub_row_from_pos( psp.map( :pos_from_idx_xy( o->sz, 0, y ) ), psp.s, buf.data, o.sz.width );
-        for( sz_t x = 0; x < o->sz.width; x++ )
+        for( sz_t x = 0; x < o.sz.width; x++ )
         {
-            color_s c = color_map.map( buf.[ x ] );
+            v2f_s pos = :pos_from_idx( o.sz, v2i_s_of( x, y ) );
+            color_s c = color_map.map( depth_image.cub_pix_from_pos( psp.map( pos ) ) );
             o.set_pix_rgba( x, y, c.r_to_u0(), c.g_to_u0(), c.b_to_u0(), 0 );
         }
     }
