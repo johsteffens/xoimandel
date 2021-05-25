@@ -1,5 +1,14 @@
 # Fractal Renderer of the Mandelbot-Set
 
+[<img align = "left" width = "205" height = "231" src = "https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/Screenshot.png">](https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/Screenshot.png "Screenshot" )
+
+[<img align = "left" width = "216" height = "200" src = "https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/image1.png">](https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/image1.png "Sample 1" )
+
+[<img align = "left" width = "203" height = "200" src = "https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/image2.png">](https://raw.githubusercontent.com/johsteffens/xoimandel/master/images/image2.png "Sample 2" )
+
+<br>
+<br>
+
 ## What it is
 
 XoiMandel is a simple and fast GUI based fractal rendering tool.
