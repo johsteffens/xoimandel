@@ -10,7 +10,7 @@
 
 XoiMandel is a simple and fast GUI based fractal rendering tool.
 
-On startup displays the main body of the Mandelbrot-Set. 
+On startup it displays the main body of the Mandelbrot-Set. 
 Navigation is easy and intuitive by using the mouse:
 
 ```
