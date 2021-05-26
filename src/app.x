@@ -53,6 +53,7 @@ stamp app_param_s =
 stamp app_s =
 {
     st_s => default_file;
+    st_s => default_image_file;
 
     sz_t initial_width  = 400;
     sz_t initial_height = 400;
@@ -348,18 +349,18 @@ func (app_s) (gboolean menu_file_save_image_as_cb( m@* o )) =
         NULL
     );
 
+    if( o.default_image_file )
+    {
+        gtk_file_chooser_set_filename( GTK_FILE_CHOOSER( chooser ), o.default_image_file.sc );
+    }
+
     gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( chooser ), TRUE );
 
     {
         m GtkFileFilter* filter = gtk_file_filter_new();
-        gtk_file_filter_set_name( filter, "PNM Fomrat (*.pnm)" );
+        gtk_file_filter_set_name( filter, "PNM Format (*.pnm)" );
         gtk_file_filter_add_pattern( filter, "*.pnm" );
         gtk_file_chooser_add_filter( GTK_FILE_CHOOSER( chooser ), filter );
-    }
-
-    if( o.default_file )
-    {
-        gtk_file_chooser_set_filename( GTK_FILE_CHOOSER( chooser ), o.default_file.sc );
     }
 
     gint result = gtk_dialog_run( GTK_DIALOG( chooser ) );
@@ -382,7 +383,28 @@ func (app_s) (gboolean menu_file_save_image_as_cb( m@* o )) =
             }
         }
 
-        img_u2.pnm_to_file( file.sc );
+        if
+        (
+            !sc_t_equal( bcore_file_extension( file.sc ), "pnm" ) &&
+            !sc_t_equal( bcore_file_extension( file.sc ), "PNM" )
+        )
+        {
+            st_s^ msg.copy_fa
+            (
+                "Currently only the PNM Image-Format is supported.\n"
+                "Please add the extension '.pnm' or '.PNM' to your file name.\n"
+                "Example: #<sc_t>.pnm\n",
+                bcore_file_name( file.sc )
+            );
+            m GtkWidget* dlg = gtk_message_dialog_new( GTK_WINDOW( o.window ), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, "%s", msg.sc );
+            gtk_dialog_run( GTK_DIALOG( dlg ) );
+            gtk_widget_destroy( dlg );
+        }
+        else
+        {
+            img_u2.pnm_to_file( file.sc );
+            o.default_image_file =< file.clone();
+        }
     }
 
     gtk_widget_destroy( chooser );
