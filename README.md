@@ -43,7 +43,7 @@ The Renderer uses a predefined color model and histogram equalization.
 However, a given position can be stored into a file and later reloaded.
 That file is text-based and can be edited with a simple text editor.
 To change the color model, locate the entry 'color_map' and change one
-of the 9 associate values:
+of the 9 associated values:
 
 ```
 ra,rb,rc (for red)
