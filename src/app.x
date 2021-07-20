@@ -293,20 +293,6 @@ func (app_s) (gboolean menu_file_save_as_cb( m@* o )) =
 
     gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( chooser ), TRUE );
 
-//    {
-//        m GtkFileFilter* filter = gtk_file_filter_new();
-//        gtk_file_filter_set_name( filter, "Xoi-Mandel (*.xoimandel)" );
-//        gtk_file_filter_add_pattern( filter, "*.xoimandel" );
-//        gtk_file_chooser_add_filter( GTK_FILE_CHOOSER( chooser ), filter );
-//    }
-//
-//    {
-//        m GtkFileFilter* filter = gtk_file_filter_new();
-//        gtk_file_filter_set_name( filter, "All Files (*)" );
-//        gtk_file_filter_add_pattern( filter, "*" );
-//        gtk_file_chooser_add_filter( GTK_FILE_CHOOSER( chooser ), filter );
-//    }
-
     if( o.default_file )
     {
         gtk_file_chooser_set_filename( GTK_FILE_CHOOSER( chooser ), o.default_file.sc );
