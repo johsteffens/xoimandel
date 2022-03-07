@@ -64,20 +64,20 @@ stamp app_s =
     private GtkWidget* window;            // main window
     private GtkWidget* rgba_image_widget; // widget displaying rgba_image (private)
 
-    func (int redraw( m @* o )) =
+    func (int redraw( m @* o ))
     {
         if( !o.shutting_down ) verbatim_C { gtk_widget_queue_draw( o->rgba_image_widget ); };
         return 0;
     };
 
-    func xoimandel.redraw_now = { o.redraw(); };
-    func xoimandel.redraw_when_idle = { verbatim_C { gdk_threads_add_idle( (int(*)(vd_t))app_s_redraw, o ) }; };
+    func xoimandel.redraw_now { o.redraw(); };
+    func xoimandel.redraw_when_idle { verbatim_C { gdk_threads_add_idle( (int(*)(vd_t))app_s_redraw, o ) }; };
 
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (void reset_view( m@* o )) =
+func (app_s) (void reset_view( m@* o ))
 {
     if( !o.worker ) return;
     o.worker.reset_psp();
@@ -85,7 +85,7 @@ func (app_s) (void reset_view( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (void set_param( m@* o, app_param_s* param )) =
+func (app_s) (void set_param( m@* o, app_param_s* param ))
 {
     if( !o.worker ) return;
     o.worker.set_color_map( param.color_map );
@@ -94,7 +94,7 @@ func (app_s) (void set_param( m@* o, app_param_s* param )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (void get_param( m@* o, m app_param_s* param )) =
+func (app_s) (void get_param( m@* o, m app_param_s* param ))
 {
     if( !o.worker ) return;
     o.worker.get_color_map( param.color_map );
@@ -103,7 +103,7 @@ func (app_s) (void get_param( m@* o, m app_param_s* param )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (void main_window_close_cb( m GtkWidget* win, m@* o )) =
+func (app_s) (void main_window_close_cb( m GtkWidget* win, m@* o ))
 {
     o.shutting_down = true;
     o.worker =< NULL;
@@ -111,7 +111,7 @@ func (app_s) (void main_window_close_cb( m GtkWidget* win, m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean drawable_draw_cb( m GtkWidget* drw, m cairo_t* cairo, m@* o )) =
+func (app_s) (gboolean drawable_draw_cb( m GtkWidget* drw, m cairo_t* cairo, m@* o ))
 {
     rgba_image_s* image = o.worker.get_draw_image();
 
@@ -139,7 +139,7 @@ func (app_s) (gboolean drawable_draw_cb( m GtkWidget* drw, m cairo_t* cairo, m@*
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean drawable_configure_event_cb( GtkWidget* drw, GdkEventConfigure* event, m@* o )) =
+func (app_s) (gboolean drawable_configure_event_cb( GtkWidget* drw, GdkEventConfigure* event, m@* o ))
 {
     o.worker.resize( sz2i_s_of( event->width, event->height ) );
     return TRUE;
@@ -147,7 +147,7 @@ func (app_s) (gboolean drawable_configure_event_cb( GtkWidget* drw, GdkEventConf
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean drawable_motion_notify_event_cb( GtkWidget* drw, GdkEventMotion* event, m@* o )) =
+func (app_s) (gboolean drawable_motion_notify_event_cb( GtkWidget* drw, GdkEventMotion* event, m@* o ))
 {
     if( event->state & GDK_BUTTON1_MASK )
     {
@@ -159,7 +159,7 @@ func (app_s) (gboolean drawable_motion_notify_event_cb( GtkWidget* drw, GdkEvent
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean drawable_button_press_event_cb( GtkWidget* drw, GdkEventButton* event, m@* o )) =
+func (app_s) (gboolean drawable_button_press_event_cb( GtkWidget* drw, GdkEventButton* event, m@* o ))
 {
     if( event->button == 1 )
     {
@@ -171,7 +171,7 @@ func (app_s) (gboolean drawable_button_press_event_cb( GtkWidget* drw, GdkEventB
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean drawable_scroll_event_cb( GtkWidget* drw, GdkEventScroll* event, m@* o )) =
+func (app_s) (gboolean drawable_scroll_event_cb( GtkWidget* drw, GdkEventScroll* event, m@* o ))
 {
     v2f_s pos = v2f_s_of( event->x, event->y );
     if     ( event->direction == GDK_SCROLL_UP   ) o.worker.scale_up  ( pos );
@@ -182,7 +182,7 @@ func (app_s) (gboolean drawable_scroll_event_cb( GtkWidget* drw, GdkEventScroll*
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean menu_file_open_cb( m@* o )) =
+func (app_s) (gboolean menu_file_open_cb( m@* o ))
 {
     m GtkWidget* chooser = gtk_file_chooser_dialog_new
     (
@@ -232,7 +232,7 @@ func (app_s) (gboolean menu_file_open_cb( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean menu_file_reload_cb( m@* o )) =
+func (app_s) (gboolean menu_file_reload_cb( m@* o ))
 {
     if( o.default_file )
     {
@@ -260,7 +260,7 @@ func (app_s) (gboolean menu_file_reload_cb( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean menu_file_save_cb( m@* o )) =
+func (app_s) (gboolean menu_file_save_cb( m@* o ))
 {
     if( o.default_file )
     {
@@ -277,7 +277,7 @@ func (app_s) (gboolean menu_file_save_cb( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean menu_file_save_as_cb( m@* o )) =
+func (app_s) (gboolean menu_file_save_as_cb( m@* o ))
 {
     m GtkWidget* chooser = gtk_file_chooser_dialog_new
     (
@@ -321,7 +321,7 @@ func (app_s) (gboolean menu_file_save_as_cb( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean menu_file_save_image_as_cb( m@* o )) =
+func (app_s) (gboolean menu_file_save_image_as_cb( m@* o ))
 {
     m GtkWidget* chooser = gtk_file_chooser_dialog_new
     (
@@ -400,7 +400,7 @@ func (app_s) (gboolean menu_file_save_image_as_cb( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean menu_about_cb( m@* o )) =
+func (app_s) (gboolean menu_about_cb( m@* o ))
 {
     st_s^ msg;
     msg.push_fa( "XoiMandel\n" );
@@ -420,7 +420,7 @@ func (app_s) (gboolean menu_about_cb( m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (gboolean win_key_press_event_cb( GtkWidget* win, GdkEventKey* event, m@* o )) =
+func (app_s) (gboolean win_key_press_event_cb( GtkWidget* win, GdkEventKey* event, m@* o ))
 {
     if( event->state == GDK_CONTROL_MASK && event->keyval == GDK_KEY_s )
     {
@@ -438,7 +438,7 @@ func (app_s) (gboolean win_key_press_event_cb( GtkWidget* win, GdkEventKey* even
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (void activate_gtk_app( m GtkApplication* gtk_app, m@* o )) =
+func (app_s) (void activate_gtk_app( m GtkApplication* gtk_app, m@* o ))
 {
     m GtkWidget* win = gtk_application_window_new( gtk_app );
     gtk_window_set_title( GTK_WINDOW( win ), "XoiMandel" );
@@ -553,7 +553,7 @@ func (app_s) (void activate_gtk_app( m GtkApplication* gtk_app, m@* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (app_s) (int run( m@* o, int argc, m char** argv )) =
+func (app_s) (int run( m@* o, int argc, m char** argv ))
 {
     m GtkApplication* gtk_app = gtk_application_new( "xoimandel.johsteffens.de", G_APPLICATION_FLAGS_NONE );
     g_signal_connect( gtk_app, "activate", G_CALLBACK( app_s_activate_gtk_app ), o );
@@ -564,7 +564,7 @@ func (app_s) (int run( m@* o, int argc, m char** argv )) =
 
 stamp c_args_s = x_array { sc_t []; };
 
-func x_inst.main =
+func x_inst.main
 {
     gtk_disable_setlocale();
     setlocale( LC_ALL, "C" );

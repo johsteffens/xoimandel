@@ -60,13 +60,13 @@ stamp worker_s =
     func (void reset( m@* o ));
     func (void setup( m@* o ));
 
-    func bcore_inst_call.init_x = { o.setup(); };
+    func bcore_inst_call.init_x { o.setup(); };
     func bcore_inst_call.down_e;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) reset =
+func (worker_s) reset
 {
     o.depth_image_buffered_psp = psp_s_of( v2f_s_of( 0, 0 ), 0.008, v2f_s_of(  -0.5, 0 ) );
     o.draw_psp                 = psp_s_of( v2f_s_of( 0, 0 ), 1 , v2f_s_of( 0, 0 ) );
@@ -76,7 +76,7 @@ func (worker_s) reset =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) setup =
+func (worker_s) setup
 {
     o.reset();
     o.depth_image_buffered = depth_image_s!;
@@ -85,7 +85,7 @@ func (worker_s) setup =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) down_e =
+func (worker_s) down_e
 {
     o.mutex.lock();
     o.shutting_down = true;
@@ -105,7 +105,7 @@ stamp block_thread_s =
 
     x_thread_s thread;
 
-    func (o of( m @* o, v2i_s p, sz2i_s sz, psp_s  psp, m depth_image_s* image, orbit_s* orbit )) =
+    func (o of( m @* o, v2i_s p, sz2i_s sz, psp_s  psp, m depth_image_s* image, orbit_s* orbit ))
     {
         o.p = p;
         o.sz = sz;
@@ -116,14 +116,14 @@ stamp block_thread_s =
         return o;
     };
 
-    func (o join(m@*o) ) = { o.thread.join(); return o; };
+    func (o join(m@*o) ) { o.thread.join(); return o; };
 
-    func x_thread.m_thread_func =
+    func x_thread.m_thread_func
     {
-        sz_t x0 = :sz_max( o.p.x, 0 );
-        sz_t x1 = :sz_min( o.p.x + o.sz.width, o.image.sz.width );
-        sz_t y0 = :sz_max( o.p.y, 0 );
-        sz_t y1 = :sz_min( o.p.y + o.sz.height, o.image.sz.height );
+        sz_t x0 = sz_max( o.p.x, 0 );
+        sz_t x1 = sz_min( o.p.x + o.sz.width, o.image.sz.width );
+        sz_t y0 = sz_max( o.p.y, 0 );
+        sz_t y1 = sz_min( o.p.y + o.sz.height, o.image.sz.height );
         for( sz_t j = y0; j < y1; j++ )
         {
             for( sz_t i = x0; i < x1; i++ )
@@ -141,7 +141,7 @@ stamp block_thread_pool_s = x_array { block_thread_s => []; };
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) x_thread.m_thread_func =
+func (worker_s) x_thread.m_thread_func
 {
     o.mutex.create_lock()^;
     o.depth_image_thread_busy = true;
@@ -201,7 +201,7 @@ func (worker_s) x_thread.m_thread_func =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void depth_image_update( m @* o )) =
+func (worker_s) (void depth_image_update( m @* o ))
 {
     o.mutex.lock();
     o.depth_image_update = true;
@@ -212,7 +212,7 @@ func (worker_s) (void depth_image_update( m @* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void image_update( m @* o )) =
+func (worker_s) (void image_update( m @* o ))
 {
     o.parent.redraw_now();
     o.depth_image_update();
@@ -220,7 +220,7 @@ func (worker_s) (void image_update( m @* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void resize( m @* o, sz2i_s sz )) =
+func (worker_s) (void resize( m @* o, sz2i_s sz ))
 {
     o.mutex.lock();
     o.image_sz = sz;
@@ -230,7 +230,7 @@ func (worker_s) (void resize( m @* o, sz2i_s sz )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void set_refpos( m @* o, v2f_s pos_pointer )) =
+func (worker_s) (void set_refpos( m @* o, v2f_s pos_pointer ))
 {
     o.mutex.lock();
     v2f_s refpos_surface = :pos_from_fdx( o.image_sz, pos_pointer );
@@ -240,7 +240,7 @@ func (worker_s) (void set_refpos( m @* o, v2f_s pos_pointer )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void get_psp( m @* o, m psp_s* psp )) =
+func (worker_s) (void get_psp( m @* o, m psp_s* psp ))
 {
     o.mutex.lock();
     psp.copy( o.depth_image_buffered_psp );
@@ -249,7 +249,7 @@ func (worker_s) (void get_psp( m @* o, m psp_s* psp )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void set_psp( m @* o, psp_s* psp )) =
+func (worker_s) (void set_psp( m @* o, psp_s* psp ))
 {
     o.mutex.lock();
     o.reset();
@@ -262,7 +262,7 @@ func (worker_s) (void set_psp( m @* o, psp_s* psp )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void reset_psp( m @* o )) =
+func (worker_s) (void reset_psp( m @* o ))
 {
     o.mutex.lock();
     o.reset();
@@ -272,7 +272,7 @@ func (worker_s) (void reset_psp( m @* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void get_color_map( m @* o, m color_map_s* map )) =
+func (worker_s) (void get_color_map( m @* o, m color_map_s* map ))
 {
     o.mutex.lock();
     map.copy( o.color_map );
@@ -281,7 +281,7 @@ func (worker_s) (void get_color_map( m @* o, m color_map_s* map )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void set_color_map( m @* o, color_map_s* map )) =
+func (worker_s) (void set_color_map( m @* o, color_map_s* map ))
 {
     o.mutex.lock();
     o.color_map.copy( map );
@@ -291,7 +291,7 @@ func (worker_s) (void set_color_map( m @* o, color_map_s* map )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void move_to( m @* o, v2f_s pos_pointer )) =
+func (worker_s) (void move_to( m @* o, v2f_s pos_pointer ))
 {
     v2f_s refpos_surface = :pos_from_fdx( o.image_sz, pos_pointer );
     o.mutex.lock();
@@ -302,7 +302,7 @@ func (worker_s) (void move_to( m @* o, v2f_s pos_pointer )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void scale_up( m@* o, v2f_s pos_pointer )) =
+func (worker_s) (void scale_up( m@* o, v2f_s pos_pointer ))
 {
     o.set_refpos( pos_pointer );
     o.mutex.lock();
@@ -313,7 +313,7 @@ func (worker_s) (void scale_up( m@* o, v2f_s pos_pointer )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void scale_down( m@* o, v2f_s pos_pointer )) =
+func (worker_s) (void scale_down( m@* o, v2f_s pos_pointer ))
 {
     o.set_refpos( pos_pointer );
     o.mutex.lock();
@@ -324,7 +324,7 @@ func (worker_s) (void scale_down( m@* o, v2f_s pos_pointer )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (rgba_image_s* get_draw_image( m@* o )) =
+func (worker_s) (rgba_image_s* get_draw_image( m@* o ))
 {
     o.mutex.lock();
     psp_s psp = o.depth_image_released_psp.mul( o.draw_psp );

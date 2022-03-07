@@ -24,12 +24,12 @@
 stamp cx_s = obliv
 {
     f3_t r; f3_t i;
-    func (@    of( f3_t r, f3_t i )) = { cx_s c; c.r = r; c.i = i; return c; };
-    func (@    add( @ o, @ b )) = { return cx_s_of( o.r + b.r, o.i + b.i ); };
-    func (@    sub( @ o, @ b )) = { return cx_s_of( o.r - b.r, o.i - b.i ); };
-    func (@    mul( @ o, @ b )) = { return cx_s_of( o.r * b.r - o.i * b.i, o.r * b.i + o.i * b.r ); };
-    func (@    sqr( @ o ))      = { return cx_s_of( o.r * o.r - o.i * o.i, 2 * o.r * o.i ); };
-    func (f3_t sqr_mag( @ o ))  = { return o.r * o.r + o.i * o.i; };
+    func (@    of( f3_t r, f3_t i )) { cx_s c; c.r = r; c.i = i; return c; };
+    func (@    add( @ o, @ b )) { return cx_s_of( o.r + b.r, o.i + b.i ); };
+    func (@    sub( @ o, @ b )) { return cx_s_of( o.r - b.r, o.i - b.i ); };
+    func (@    mul( @ o, @ b )) { return cx_s_of( o.r * b.r - o.i * b.i, o.r * b.i + o.i * b.r ); };
+    func (@    sqr( @ o ))      { return cx_s_of( o.r * o.r - o.i * o.i, 2 * o.r * o.i ); };
+    func (f3_t sqr_mag( @ o ))  { return o.r * o.r + o.i * o.i; };
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ stamp orbit_s =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (orbit_s) (u3_t escape_time( @* o, v2f_s pos )) =
+func (orbit_s) (u3_t escape_time( @* o, v2f_s pos ))
 {
     cx_s c = { pos.x, pos.y };
     cx_s v = c;

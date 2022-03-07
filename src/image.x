@@ -26,14 +26,14 @@ stamp u3_range_s = obliv  x_inst { u3_t min; u3_t max; };
 stamp depth_image_s = x_array
 {
     u3_t []; sz2i_s sz;
-    func (o set_sz( m@* o, sz2i_s sz )) = { o.set_size( sz.width * sz.height ); o.sz = sz; return o; };
-    func (u3_t get_pix( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ] : 0; };
-    func (void set_pix( m@* o, sz_t x, sz_t y, u3_t v )) = { if( o.sz.inside( x, y ) ) o.[ y * o.sz.width + x ] = v; };
-    func (u3_t get_max( const depth_image_s* o )) = { u3_t r =  0; foreach( u3_t v in o ) r = v > r ? v : r; return r; };
-    func (u3_t get_min( const depth_image_s* o )) = { u3_t r = -1; foreach( u3_t v in o ) r = v < r ? v : r; return r; };
-    func (u3_t pix_from_idx( @* o, v2i_s* idx )) = { return o.get_pix( idx.x, idx.y ); };
+    func (o set_sz( m@* o, sz2i_s sz )) { o.set_size( sz.width * sz.height ); o.sz = sz; return o; };
+    func (u3_t get_pix( @* o, sz_t x, sz_t y )) { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ] : 0; };
+    func (void set_pix( m@* o, sz_t x, sz_t y, u3_t v )) { if( o.sz.inside( x, y ) ) o.[ y * o.sz.width + x ] = v; };
+    func (u3_t get_max( const depth_image_s* o )) { u3_t r =  0; foreach( u3_t v in o ) r = v > r ? v : r; return r; };
+    func (u3_t get_min( const depth_image_s* o )) { u3_t r = -1; foreach( u3_t v in o ) r = v < r ? v : r; return r; };
+    func (u3_t pix_from_idx( @* o, v2i_s* idx )) { return o.get_pix( idx.x, idx.y ); };
 
-    func (u3_range_s get_range( const depth_image_s* o )) =
+    func (u3_range_s get_range( const depth_image_s* o ))
     {
         u3_range_s r; r.max = 0; r.min = -1;
         foreach( u3_t v in o )
@@ -47,10 +47,10 @@ stamp depth_image_s = x_array
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (depth_image_s) (u3_t cub_pix_from_pos( @* o, v2f_s pos )) =
+func (depth_image_s) (u3_t cub_pix_from_pos( @* o, v2f_s pos ))
 {
     v2f_s fdx = :fdx_from_pos( o.sz, pos );
-    v2i_s idx = { :f3_rint( fdx.x - 0.5 ), :f3_rint( fdx.y - 0.5 ) };
+    v2i_s idx { :f3_rint( fdx.x - 0.5 ), :f3_rint( fdx.y - 0.5 ) };
     s3_t x = :f3_rint( ( fdx.x - idx.x ) * 64 );
     s3_t y = :f3_rint( ( fdx.y - idx.y ) * 64 );
 
@@ -143,7 +143,7 @@ func (depth_image_s) (u3_t cub_pix_from_pos( @* o, v2f_s pos )) =
 //----------------------------------------------------------------------------------------------------------------------
 
 stamp :hist_s = x_array { f3_t []; };
-func (depth_image_s) (void equalize_histogram( @* o )) =
+func (depth_image_s) (void equalize_histogram( @* o ))
 {
     u3_range_s range = o.get_range();
 
@@ -182,15 +182,15 @@ func (depth_image_s) (void equalize_histogram( @* o )) =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (u0_t v_to_u0( f3_t v )) = { return ( v <= 0 ) ? 0.0 : ( v >= 1.0 ) ? 255 : v * 255; };
+func (u0_t v_to_u0( f3_t v )) { return ( v <= 0 ) ? 0.0 : ( v >= 1.0 ) ? 255 : v * 255; };
 
 stamp color_s = obliv x_inst
 {
     f3_t r; f3_t g; f3_t b;
 
-    func (u0_t r_to_u0( @* o )) = { return :v_to_u0( o.r ); };
-    func (u0_t g_to_u0( @* o )) = { return :v_to_u0( o.g ); };
-    func (u0_t b_to_u0( @* o )) = { return :v_to_u0( o.b ); };
+    func (u0_t r_to_u0( @* o )) { return :v_to_u0( o.r ); };
+    func (u0_t g_to_u0( @* o )) { return :v_to_u0( o.g ); };
+    func (u0_t b_to_u0( @* o )) { return :v_to_u0( o.b ); };
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ stamp color_map_s =
 //    f3_t ra = 5.0; f3_t rb = 4.0; f3_t rc = 1.0;
 //    f3_t ga = 5.0; f3_t gb = 1.0; f3_t gc = 5.0;
 //    f3_t ba = 1.0; f3_t bb = 2.5; f3_t bc = 4.0;
-    func (color_s map( @* o, u3_t val )) =
+    func (color_s map( @* o, u3_t val ))
     {
         color_s c;
         f3_t v = ( f3_t )( val ) / 65536;
@@ -229,8 +229,8 @@ stamp color_map_s =
 stamp rgba_s = obliv x_inst
 {
     u0_t b; u0_t g; u0_t r; u0_t a;
-    func (u2_t u2( @*o )) = { return o.cast( u2_t* ).0; };
-    func (void set_u2( m@*o, u2_t v )) = { o.cast( m u2_t* ).0 = v; };
+    func (u2_t u2( @*o )) { return o.cast( u2_t* ).0; };
+    func (void set_u2( m@*o, u2_t v )) { o.cast( m u2_t* ).0 = v; };
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -240,13 +240,13 @@ stamp rgba_image_s = x_array
     rgba_s [];
     sz2i_s sz;
 
-    func (o set_sz( m@* o, sz2i_s sz )) = { o.set_size( sz.width * sz.height ); o.sz = sz; return o; };
-    func (u2_t get_pix_u2( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ].u2() : 0; };
-    func (rgba_s* get_pix( @* o, sz_t x, sz_t y )) = { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ].1 : NULL; };
-    func (void set_pix_u2( m@* o, sz_t x, sz_t y, u2_t v )) = { if( o.sz.inside( x, y ) ) o.[ y * o.sz.width + x ].set_u2( v ); };
-    func (u3_t pix_u2_from_idx( @* o, v2i_s* idx )) = { return o.get_pix_u2( idx.x, idx.y ); };
+    func (o set_sz( m@* o, sz2i_s sz )) { o.set_size( sz.width * sz.height ); o.sz = sz; return o; };
+    func (u2_t get_pix_u2( @* o, sz_t x, sz_t y )) { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ].u2() : 0; };
+    func (rgba_s* get_pix( @* o, sz_t x, sz_t y )) { return o.sz.inside( x, y ) ? o.[ y * o.sz.width + x ].1 : NULL; };
+    func (void set_pix_u2( m@* o, sz_t x, sz_t y, u2_t v )) { if( o.sz.inside( x, y ) ) o.[ y * o.sz.width + x ].set_u2( v ); };
+    func (u3_t pix_u2_from_idx( @* o, v2i_s* idx )) { return o.get_pix_u2( idx.x, idx.y ); };
 
-    func (void set_pix_rgba( m@* o, sz_t x, sz_t y, u0_t r, u0_t g, u0_t b, u0_t a )) =
+    func (void set_pix_rgba( m@* o, sz_t x, sz_t y, u0_t r, u0_t g, u0_t b, u0_t a ))
     {
         if( o.sz.inside( x, y ) )
         {
@@ -261,7 +261,7 @@ stamp rgba_image_s = x_array
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (rgba_image_s) (void fill_cub_from_depth_image( m @* o, depth_image_s* depth_image, color_map_s* color_map, psp_s psp )) =
+func (rgba_image_s) (void fill_cub_from_depth_image( m @* o, depth_image_s* depth_image, color_map_s* color_map, psp_s psp ))
 {
     for( sz_t y = 0; y < o.sz.height; y++ )
     {
