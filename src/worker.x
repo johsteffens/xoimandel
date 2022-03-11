@@ -57,8 +57,8 @@ stamp worker_s =
 
     //------------------------------------------------------------------------------------------------------------------
 
-    func (void reset( m@* o ));
-    func (void setup( m@* o ));
+    func void reset( m@* o );
+    func void setup( m@* o );
 
     func bcore_inst_call.init_x { o.setup(); };
     func bcore_inst_call.down_e;
@@ -105,7 +105,7 @@ stamp block_thread_s =
 
     x_thread_s thread;
 
-    func (o of( m @* o, v2i_s p, sz2i_s sz, psp_s  psp, m depth_image_s* image, orbit_s* orbit ))
+    func o of( m @* o, v2i_s p, sz2i_s sz, psp_s  psp, m depth_image_s* image, orbit_s* orbit )
     {
         o.p = p;
         o.sz = sz;
@@ -113,10 +113,9 @@ stamp block_thread_s =
         o.image = image;
         o.orbit = orbit.cast( m$* );
         o.thread.call_m_thread_func( o );
-        return o;
     };
 
-    func (o join(m@*o) ) { o.thread.join(); return o; };
+    func o join( m@*o ) o.thread.join();
 
     func x_thread.m_thread_func
     {
@@ -131,8 +130,8 @@ stamp block_thread_s =
                 o.image.set_pix( i, j, o.orbit.escape_time( o.psp.map( :pos_from_idx( o.image.sz, v2i_s_of( i, j ) ) ) ) );
             }
         }
-        return NULL;
-    };
+        = NULL;
+    }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -171,13 +170,6 @@ func (worker_s) x_thread.m_thread_func
                 }
             }
             pool.clear();
-
-//            o.mutex.create_lock()^;
-//            if( o.shutting_down || o.depth_image_update )
-//            {
-//                redraw = false;
-//                break;
-//            }
         }
 
         if( redraw )
@@ -196,12 +188,12 @@ func (worker_s) x_thread.m_thread_func
     }
 
     o.depth_image_thread_busy = false;
-    return NULL;
+    = NULL;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void depth_image_update( m @* o ))
+func (worker_s) void depth_image_update( m @* o )
 {
     o.mutex.lock();
     o.depth_image_update = true;
@@ -212,7 +204,7 @@ func (worker_s) (void depth_image_update( m @* o ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void image_update( m @* o ))
+func (worker_s) void image_update( m @* o )
 {
     o.parent.redraw_now();
     o.depth_image_update();
@@ -220,7 +212,7 @@ func (worker_s) (void image_update( m @* o ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void resize( m @* o, sz2i_s sz ))
+func (worker_s) void resize( m @* o, sz2i_s sz )
 {
     o.mutex.lock();
     o.image_sz = sz;
@@ -230,7 +222,7 @@ func (worker_s) (void resize( m @* o, sz2i_s sz ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void set_refpos( m @* o, v2f_s pos_pointer ))
+func (worker_s) void set_refpos( m @* o, v2f_s pos_pointer )
 {
     o.mutex.lock();
     v2f_s refpos_surface = :pos_from_fdx( o.image_sz, pos_pointer );
@@ -240,7 +232,7 @@ func (worker_s) (void set_refpos( m @* o, v2f_s pos_pointer ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void get_psp( m @* o, m psp_s* psp ))
+func (worker_s) void get_psp( m @* o, m psp_s* psp )
 {
     o.mutex.lock();
     psp.copy( o.depth_image_buffered_psp );
@@ -249,7 +241,7 @@ func (worker_s) (void get_psp( m @* o, m psp_s* psp ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void set_psp( m @* o, psp_s* psp ))
+func (worker_s) void set_psp( m @* o, psp_s* psp )
 {
     o.mutex.lock();
     o.reset();
@@ -262,7 +254,7 @@ func (worker_s) (void set_psp( m @* o, psp_s* psp ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void reset_psp( m @* o ))
+func (worker_s) void reset_psp( m @* o )
 {
     o.mutex.lock();
     o.reset();
@@ -272,7 +264,7 @@ func (worker_s) (void reset_psp( m @* o ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void get_color_map( m @* o, m color_map_s* map ))
+func (worker_s) void get_color_map( m @* o, m color_map_s* map )
 {
     o.mutex.lock();
     map.copy( o.color_map );
@@ -281,7 +273,7 @@ func (worker_s) (void get_color_map( m @* o, m color_map_s* map ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void set_color_map( m @* o, color_map_s* map ))
+func (worker_s) void set_color_map( m @* o, color_map_s* map )
 {
     o.mutex.lock();
     o.color_map.copy( map );
@@ -291,7 +283,7 @@ func (worker_s) (void set_color_map( m @* o, color_map_s* map ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void move_to( m @* o, v2f_s pos_pointer ))
+func (worker_s) void move_to( m @* o, v2f_s pos_pointer )
 {
     v2f_s refpos_surface = :pos_from_fdx( o.image_sz, pos_pointer );
     o.mutex.lock();
@@ -302,7 +294,7 @@ func (worker_s) (void move_to( m @* o, v2f_s pos_pointer ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void scale_up( m@* o, v2f_s pos_pointer ))
+func (worker_s) void scale_up( m@* o, v2f_s pos_pointer )
 {
     o.set_refpos( pos_pointer );
     o.mutex.lock();
@@ -313,7 +305,7 @@ func (worker_s) (void scale_up( m@* o, v2f_s pos_pointer ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (void scale_down( m@* o, v2f_s pos_pointer ))
+func (worker_s) void scale_down( m@* o, v2f_s pos_pointer )
 {
     o.set_refpos( pos_pointer );
     o.mutex.lock();
@@ -324,7 +316,7 @@ func (worker_s) (void scale_down( m@* o, v2f_s pos_pointer ))
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (worker_s) (rgba_image_s* get_draw_image( m@* o ))
+func (worker_s) rgba_image_s* get_draw_image( m@* o )
 {
     o.mutex.lock();
     psp_s psp = o.depth_image_released_psp.mul( o.draw_psp );
@@ -333,7 +325,7 @@ func (worker_s) (rgba_image_s* get_draw_image( m@* o ))
     o.rgba_image_draw.fill_cub_from_depth_image( o.depth_image_released, o.color_map, psp );
     o.mutex.unlock();
 
-    return o.rgba_image_draw;
+    = o.rgba_image_draw;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

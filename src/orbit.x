@@ -24,12 +24,12 @@
 stamp cx_s = obliv
 {
     f3_t r; f3_t i;
-    func (@    of( f3_t r, f3_t i )) { cx_s c; c.r = r; c.i = i; return c; };
-    func (@    add( @ o, @ b )) { return cx_s_of( o.r + b.r, o.i + b.i ); };
-    func (@    sub( @ o, @ b )) { return cx_s_of( o.r - b.r, o.i - b.i ); };
-    func (@    mul( @ o, @ b )) { return cx_s_of( o.r * b.r - o.i * b.i, o.r * b.i + o.i * b.r ); };
-    func (@    sqr( @ o ))      { return cx_s_of( o.r * o.r - o.i * o.i, 2 * o.r * o.i ); };
-    func (f3_t sqr_mag( @ o ))  { return o.r * o.r + o.i * o.i; };
+    func @ ( f3_t r, f3_t i ) { cx_s c; c.r = r; c.i = i; = c; }
+    func @ add( @ o, @ b )   = cx_s_( o.r + b.r, o.i + b.i );
+    func @ sub( @ o, @ b )   = cx_s_( o.r - b.r, o.i - b.i );
+    func @ mul( @ o, @ b )   = cx_s_( o.r * b.r - o.i * b.i, o.r * b.i + o.i * b.r );
+    func @ sqr( @ o )        = cx_s_( o.r * o.r - o.i * o.i, 2 * o.r * o.i );
+    func f3_t sqr_mag( @ o ) = o.r * o.r + o.i * o.i;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ stamp orbit_s =
 
 //----------------------------------------------------------------------------------------------------------------------
 
-func (orbit_s) (u3_t escape_time( @* o, v2f_s pos ))
+func (orbit_s) u3_t escape_time( @* o, v2f_s pos )
 {
     cx_s c = { pos.x, pos.y };
     cx_s v = c;
@@ -50,10 +50,10 @@ func (orbit_s) (u3_t escape_time( @* o, v2f_s pos ))
     f3_t a = v.r - 0.25;
     f3_t b = v.i * v.i;
     f3_t q = a * a + b;
-    if( q * ( q + a ) < 0.25 * b ) return 0;
+    if( q * ( q + a ) < 0.25 * b ) = 0;
 
     // bulb - test
-    if( :f3_sqr( v.r + 1 ) + :f3_sqr( v.i ) < 0.0625 ) return 0;
+    if( f3_sqr( v.r + 1 ) + f3_sqr( v.i ) < 0.0625 ) = 0;
 
 
     f3_t limit = 1 << 16;
@@ -74,12 +74,12 @@ func (orbit_s) (u3_t escape_time( @* o, v2f_s pos ))
 
     f3_t sqr_mag = v.sqr_mag();
 
-    if( sqr_mag <= 4.0 ) return 0;
+    if( sqr_mag <= 4.0 ) = 0;
 
-    f3_t offs = 1.0 - :f3_log( :f3_log( sqr_mag ) / :f3_log( limit ) ) / :f3_log( 2.0 );
+    f3_t offs = 1.0 - f3_log( f3_log( sqr_mag ) / f3_log( limit ) ) / f3_log( 2.0 );
 
-    return ( i << 8 ) + :f3_rint( offs * 256 );
-};
+    = ( i << 8 ) + f3_rs3( offs * 256 );
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
