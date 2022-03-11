@@ -64,7 +64,7 @@ stamp app_s =
     private GtkWidget* window;            // main window
     private GtkWidget* rgba_image_widget; // widget displaying rgba_image (private)
 
-    func (int redraw( m @* o ))
+    func int redraw( m @* o )
     {
         if( !o.shutting_down ) verbatim_C { gtk_widget_queue_draw( o->rgba_image_widget ); };
         = 0;
