@@ -7,7 +7,7 @@ SRC_DIR  = src
 XO_DIR   = xo
 XC       = $(XC_DIR)/bin/xoico
 C_FLAGS   = -Wall -O3 -std=c11 `pkg-config --cflags gtk+-3.0`
-LD_FLAGS  = -lm -lpthread `pkg-config --libs gtk+-3.0`
+LD_FLAGS  = -lm -lpthread -latomic `pkg-config --libs gtk+-3.0`
 XC_FLAGS  = -O $(XO_DIR)
 
 XC_CFGS = \
@@ -15,6 +15,7 @@ XC_CFGS = \
 
 INCLUDES = \
 	-I $(BETH_DIR)/lib/bcore \
+	-I $(BETH_DIR)/lib/bmath \
 	-I $(XO_DIR)
 
 XSRCS = \
@@ -22,11 +23,13 @@ XSRCS = \
 
 HDRS = \
 	$(wildcard $(BETH_DIR)/lib/bcore/*.h) \
+	$(wildcard $(BETH_DIR)/lib/bmath/*.h) \
 	$(wildcard $(SRC_DIR)/*.h) \
 	$(wildcard $(XO_DIR)/*.h)
 
 SRCS = \
 	$(wildcard $(BETH_DIR)/lib/bcore/*.c) \
+	$(wildcard $(BETH_DIR)/lib/bmath/*.c) \
 	$(wildcard $(SRC_DIR)/*.c) \
 	$(wildcard $(XO_DIR)/*.c)
 

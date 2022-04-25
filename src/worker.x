@@ -19,8 +19,6 @@
 /**********************************************************************************************************************/
 /// worker
 
-type GtkWidget;
-
 /// tell window manager to redraw
 feature void redraw_now( m @* o );
 feature void redraw_when_idle( m @* o );

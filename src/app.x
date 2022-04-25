@@ -17,6 +17,7 @@
  */
 
 include <locale.h>;
+include <gtk/gtk.h>;
 
 /**********************************************************************************************************************/
 
@@ -422,18 +423,9 @@ func (app_s) gboolean menu_about_cb( m@* o )
 
 func (app_s) gboolean win_key_press_event_cb( GtkWidget* win, GdkEventKey* event, m@* o )
 {
-    if( event->state == GDK_CONTROL_MASK && event->keyval == GDK_KEY_s )
-    {
-        = app_s_menu_file_save_cb( o );
-    }
-    else if( event->state == GDK_CONTROL_MASK && event->keyval == GDK_KEY_r )
-    {
-        = app_s_menu_file_reload_cb( o );
-    }
-    else
-    {
-        = FALSE;
-    }
+    if     ( event->state == GDK_CONTROL_MASK && event->keyval == GDK_KEY_s ) = o.menu_file_save_cb();
+    else if( event->state == GDK_CONTROL_MASK && event->keyval == GDK_KEY_r ) = o.menu_file_reload_cb();
+    else                                                                      = FALSE;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -562,18 +554,11 @@ func (app_s) int run( m@* o, int argc, m char** argv )
 
 //----------------------------------------------------------------------------------------------------------------------
 
-stamp c_args_s = x_array { sc_t []; };
-
-func x_inst.main
+func x_inst.main_c
 {
     gtk_disable_setlocale();
     setlocale( LC_ALL, "C" );
-
-    c_args_s^ c_args.set_size( args.size );
-    for( sz_t i = 0; i < args.size; i++ ) c_args.[ i ] = args.[ i ].sc;
-
-    m app_s* app = app_s!^;
-    = ( s2_t )app.run( ( int )c_args.size, ( char** )c_args.data );
+    = app_s!^.run( argc, argv );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
