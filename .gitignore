@@ -7,6 +7,7 @@ app
 private
 deprecated
 xoimandel.*
+*.bmarks
 
 # XOICO specific
 *.xo.h
