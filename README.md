@@ -30,7 +30,6 @@ $ sudo apt install libgtk-3-dev
 
 ```
 $ git clone https://github.com/johsteffens/beth
-$ git clone https://github.com/johsteffens/xoico
 $ git clone https://github.com/johsteffens/xoimandel
 $ cd xoimandel
 $ make
